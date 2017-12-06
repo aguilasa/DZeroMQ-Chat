@@ -3,7 +3,13 @@
         <ProjectGuid>{8B92E7A9-0A87-4BDC-AD37-233217F48FC2}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
+        <Projects Include="ZeroMQLib\ZeroMQLib.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="Client\ChatClient.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="Server\ServerChat.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -14,6 +20,15 @@
             <Default.Personality/>
         </BorlandProject>
     </ProjectExtensions>
+    <Target Name="ZeroMQLib">
+        <MSBuild Projects="ZeroMQLib\ZeroMQLib.dproj"/>
+    </Target>
+    <Target Name="ZeroMQLib:Clean">
+        <MSBuild Projects="ZeroMQLib\ZeroMQLib.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ZeroMQLib:Make">
+        <MSBuild Projects="ZeroMQLib\ZeroMQLib.dproj" Targets="Make"/>
+    </Target>
     <Target Name="ChatClient">
         <MSBuild Projects="Client\ChatClient.dproj"/>
     </Target>
@@ -23,14 +38,23 @@
     <Target Name="ChatClient:Make">
         <MSBuild Projects="Client\ChatClient.dproj" Targets="Make"/>
     </Target>
+    <Target Name="ServerChat">
+        <MSBuild Projects="Server\ServerChat.dproj"/>
+    </Target>
+    <Target Name="ServerChat:Clean">
+        <MSBuild Projects="Server\ServerChat.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ServerChat:Make">
+        <MSBuild Projects="Server\ServerChat.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="ChatClient"/>
+        <CallTarget Targets="ZeroMQLib;ChatClient;ServerChat"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="ChatClient:Clean"/>
+        <CallTarget Targets="ZeroMQLib:Clean;ChatClient:Clean;ServerChat:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="ChatClient:Make"/>
+        <CallTarget Targets="ZeroMQLib:Make;ChatClient:Make;ServerChat:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

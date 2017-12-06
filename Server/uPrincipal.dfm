@@ -1,9 +1,9 @@
 object FPrincipal: TFPrincipal
   Left = 0
   Top = 0
-  Caption = 'ZeroMQ - Chat'
-  ClientHeight = 319
-  ClientWidth = 510
+  Caption = 'ZeroMQ - Server'
+  ClientHeight = 201
+  ClientWidth = 447
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
