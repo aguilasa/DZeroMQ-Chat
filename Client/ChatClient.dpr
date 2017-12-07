@@ -10,5 +10,6 @@ begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TFPrincipal, FPrincipal);
+  IsMultiThread := True;
   Application.Run;
 end.
