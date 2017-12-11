@@ -27,7 +27,6 @@ object FChat: TFChat
         Text = 'Conectado como: '
         Width = 105
       end>
-    ExplicitTop = 432
   end
   object PnMessages: TPanel
     Left = 0
@@ -36,8 +35,6 @@ object FChat: TFChat
     Height = 311
     Align = alClient
     TabOrder = 0
-    ExplicitTop = 72
-    ExplicitHeight = 267
     object Panel2: TPanel
       Left = 1
       Top = 274
@@ -46,8 +43,6 @@ object FChat: TFChat
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 0
-      ExplicitLeft = 2
-      ExplicitTop = 390
       DesignSize = (
         634
         36)
@@ -60,6 +55,19 @@ object FChat: TFChat
         TabOrder = 0
         OnKeyDown = EdMessageKeyDown
       end
+    end
+    object LbMessages: TListBox
+      Left = 1
+      Top = 1
+      Width = 634
+      Height = 273
+      Align = alClient
+      ItemHeight = 13
+      TabOrder = 1
+      ExplicitLeft = 32
+      ExplicitTop = 24
+      ExplicitWidth = 121
+      ExplicitHeight = 97
     end
   end
   object Panel1: TPanel
@@ -76,6 +84,7 @@ object FChat: TFChat
       Height = 25
       Caption = 'Conectar'
       TabOrder = 0
+      OnClick = btnConnectClick
     end
   end
 end

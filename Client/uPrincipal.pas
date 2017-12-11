@@ -17,6 +17,7 @@ type
     procedure edNicknameKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
     procedure Button1Click(Sender: TObject);
+    procedure Button2Click(Sender: TObject);
   private
     { Private declarations }
     procedure ValidateNickname;
@@ -39,6 +40,11 @@ uses uChat;
 procedure TFPrincipal.Button1Click(Sender: TObject);
 begin
   ValidateNickname;
+end;
+
+procedure TFPrincipal.Button2Click(Sender: TObject);
+begin
+  Close;
 end;
 
 procedure TFPrincipal.edNicknameKeyDown(Sender: TObject; var Key: Word;

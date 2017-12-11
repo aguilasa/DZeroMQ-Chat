@@ -8,12 +8,6 @@ uses
   Vcl.StdCtrls, Vcl.ComCtrls, SyncObjs, Vcl.ToolWin;
 
 type
-  PMessageRecord = ^TMessageRecord;
-  TMessageRecord = record
-    Context: IZeroMQ;
-    Message: string;
-  end;
-
 
   TThreadInfo = record
     ThreadHandle : Integer;
@@ -27,26 +21,29 @@ type
     EdMessage: TEdit;
     Panel1: TPanel;
     btnConnect: TButton;
+    LbMessages: TListBox;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
     procedure EdMessageKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
     procedure FormCreate(Sender: TObject);
+    procedure btnConnectClick(Sender: TObject);
   private
     { Private declarations }
     FConected: Boolean;
     FNickName: string;
-    FContext: IZeroMQ;
+    FContext: TZeroMQ;
     FSender: IZMQPair;
-    FReceiver: IZMQPair;
-    FPoller: IZMQPoll;
-    SenderInfo: TThreadInfo;
-    MessageRec: TMessageRecord;
+    ReceiverInfo: TThreadInfo;
     procedure Initialize;
     procedure ShowMessagePanel;
     procedure CreateSockets;
     procedure UpdateStatusBar;
     procedure SendMessage;
+    procedure CreateReceiverThread;
+    procedure Connect;
+    procedure EnableMessagePanel;
+    procedure EnableConnectButton;
   public
     { Public declarations }
 
@@ -60,36 +57,73 @@ implementation
 
 {$R *.dfm}
 
-function SenderThread(MsgRec: Pointer): Integer;
-var
-  MessageRec: TMessageRecord;
-  Sender: IZMQPair;
-  Context: IZeroMQ;
+procedure AddMessage(const aMessage: string);
 begin
-  MessageRec := PMessageRecord(MsgRec)^;
-  Context := MessageRec.Context;
-  Sender := Context.Start(ZMQSocket.Push);
-  Sender.Connect('tcp://localhost:5001');
-  Sender.SendString(MessageRec.Message);
+  FChat.LbMessages.Items.Add(aMessage);
+end;
+
+function ReceiverThread(PContext: Pointer): Integer;
+var
+  Receiver: IZMQPair;
+  Poller: IZMQPoll;
+  Context: IZeroMQ;
+  Received: String;
+  Events: Integer;
+begin
+  Context := PZeroMQ(PContext)^;
+
+  Receiver := Context.Start(ZMQSocket.Subscriber);
+  Receiver.Connect('tcp://localhost:5000');
+  Receiver.Subscribe('');
+
+  Poller := Context.Poller;
+  Poller.RegisterPair(Receiver, [PollIn]);
+
+  while true do
+  begin
+    Events := Poller.PollOnce;
+    if Events > 0 then
+    begin
+      Received := Receiver.ReceiveString;
+      AddMessage(Received);
+    end;
+  end;
   Result := 0;
 end;
 
+procedure CloseThread(ThreadHandle : Integer);
+begin
+  if ThreadHandle <> 0 then
+    CloseHandle(ThreadHandle);
+end;
+
 { TFChat }
+
+procedure TFChat.btnConnectClick(Sender: TObject);
+begin
+  Connect;
+end;
+
+procedure TFChat.Connect;
+begin
+  CreateSockets;
+  CreateReceiverThread;
+  FConected := True;
+  EnableMessagePanel;
+  EnableConnectButton;
+  UpdateStatusBar;
+end;
+
+procedure TFChat.CreateReceiverThread;
+begin
+  ReceiverInfo.ThreadHandle := BeginThread(nil, 0, @ReceiverThread, @FContext, 0, ReceiverInfo.ThreadId);
+end;
 
 procedure TFChat.CreateSockets;
 begin
   FContext := TZeroMQ.Create;
   FSender := FContext.Start(ZMQSocket.Push);
   FSender.Connect('tcp://localhost:5001');
-{
-  FReceiver := FContext.Start(ZMQSocket.Subscriber);
-  FReceiver.Bind('tcp://*:5000');
-  FReceiver.Subscribe('');
-
-  FPoller := FContext.Poller;
-  FPoller.RegisterPair(FReceiver, [PollIn]);   }
-
-//  FClientThread := TClientThread.Create(FPoller, FReceiver, ListBox1);
 end;
 
 procedure TFChat.EdMessageKeyDown(Sender: TObject; var Key: Word;
@@ -101,18 +135,30 @@ begin
   end;
 end;
 
+procedure TFChat.EnableConnectButton;
+begin
+  btnConnect.Enabled := not FConected;
+end;
+
+procedure TFChat.EnableMessagePanel;
+begin
+  PnMessages.Enabled := FConected;
+end;
+
 procedure TFChat.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
+  CloseThread(ReceiverInfo.ThreadHandle);
   Action := caFree;
 end;
 
 procedure TFChat.FormCreate(Sender: TObject);
 begin
-  CreateSockets;
+//  CreateSockets;
 end;
 
 procedure TFChat.FormShow(Sender: TObject);
 begin
+  EnableMessagePanel;
   UpdateStatusBar;
 end;
 
@@ -124,12 +170,6 @@ procedure TFChat.SendMessage;
 begin
   FSender.SendString(EdMessage.Text);
   EdMessage.Text := '';
-{
-  MessageRec.Context := FContext;
-  MessageRec.Message := EdMessage.Text;
-  EdMessage.Text := '';
-  SenderInfo.ThreadHandle := BeginThread(nil, 0, @SenderThread, @MessageRec, 0, SenderInfo.ThreadId);
-}
 end;
 
 procedure TFChat.ShowMessagePanel;

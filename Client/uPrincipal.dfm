@@ -46,5 +46,6 @@ object FPrincipal: TFPrincipal
     Height = 25
     Caption = 'Cancelar'
     TabOrder = 2
+    OnClick = Button2Click
   end
 end
