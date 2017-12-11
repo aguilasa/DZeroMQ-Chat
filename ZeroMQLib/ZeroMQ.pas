@@ -60,6 +60,9 @@ type
     function ReceiveStrings(const DontWait: Boolean = False): TArray<string>;
     { High Level Algorithgms - Forward message to another pair }
     procedure ForwardMessage(Pair: IZMQPair);
+    { A partir daqui é meu }
+    function SendStream(const Data: TMemoryStream; Flags: MessageFlags): Integer; overload;
+    function SendStream(const Data: TMemoryStream; DontWait: Boolean = False): Integer; overload;
   end;
 
   PollEvent = (PollIn, PollOut, PollErr);
@@ -84,6 +87,7 @@ type
     procedure Sleep(Seconds: Integer);
   end;
 
+  PZeroMQ = ^TZeroMQ;
   TZeroMQ = class(TInterfacedObject, IZeroMQ)
   private
     FContext: Pointer;
@@ -136,6 +140,9 @@ type
     function ReceiveStrings(const DontWait: Boolean = False): TArray<string>;
     { High Level Algorithgms - Forward message to another pair }
     procedure ForwardMessage(Pair: IZMQPair);
+    { Implementação de envio de Streams }
+    function SendStream(const Data: TMemoryStream; Flags: MessageFlags): Integer; overload;
+    function SendStream(const Data: TMemoryStream; DontWait: Boolean = False): Integer; overload;
   end;
 
   TZMQPoll = class(TInterfacedObject, IZMQPoll)
@@ -361,11 +368,35 @@ begin
   Result := zmq_sendmsg(FSocket, @Msg, Byte(Flags));
 end;
 
+function TZMQPair.SendStream(const Data: TMemoryStream; Flags: MessageFlags): Integer;
+var
+  Msg: TZmqMsg;
+  Buffer: PByte;
+  Len: Integer;
+begin
+  Len := Data.Size;
+  GetMem(Buffer, Len);
+  Data.Position := 0;
+  Data.ReadBuffer(Buffer^, Len);
+  Result := zmq_msg_init_size(@Msg, Len);
+  if Result = 0 then
+  begin
+    Move(Buffer^, zmq_msg_data(@Msg)^, Len);
+    Result := SendMessage(Msg, Flags);
+    zmq_msg_close(@Msg);
+  end;
+end;
+
+function TZMQPair.SendStream(const Data: TMemoryStream; DontWait: Boolean): Integer;
+begin
+  Result := SendStream(Data, MessageFlags(Ord(DontWait)));
+end;
+
 function TZMQPair.SendString(const Data: string; Flags: MessageFlags): Integer;
 var
-  msg: TZmqMsg;
-  str: UTF8String;
-  len: Integer;
+  Msg: TZmqMsg;
+  Str: UTF8String;
+  Len: Integer;
 begin
   str := UTF8String(Data);
   len := Length(str);

@@ -39,6 +39,15 @@ object FPrincipal: TFPrincipal
       Enabled = False
       TabOrder = 1
     end
+    object Button1: TButton
+      Left = 184
+      Top = 10
+      Width = 75
+      Height = 25
+      Caption = 'Button1'
+      TabOrder = 2
+      OnClick = Button1Click
+    end
   end
   object Panel2: TPanel
     Left = 0
@@ -55,9 +64,5 @@ object FPrincipal: TFPrincipal
       Align = alClient
       TabOrder = 0
     end
-  end
-  object Timer1: TTimer
-    Left = 200
-    Top = 8
   end
 end

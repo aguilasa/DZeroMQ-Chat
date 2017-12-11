@@ -3,22 +3,15 @@ unit uPrincipal;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, ZeroMQ, ZeroMQ.API, Vcl.StdCtrls, Vcl.ExtCtrls;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics,   Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
+  ZeroMQ, ZeroMQ.API, Vcl.StdCtrls, Vcl.ExtCtrls;
 
 type
-  TServerThread = class(TThread)
-  private
-    FMessage: string;
-    FPublisher: IZMQPair;
-    FReceiver: IZMQPair;
-    FMemoMessage: TMemo;
-    procedure WriteMessage;
-  protected
-    procedure Execute; override;
-  public
-    constructor Create(Publisher, Receiver: IZMQPair; MemoMessage: TMemo);
-    destructor Destroy; override;
+
+  TThreadInfo = record
+    ThreadHandle : Integer;
+    ThreadId : Cardinal;
   end;
 
   TFPrincipal = class(TForm)
@@ -27,18 +20,22 @@ type
     BtnPausar: TButton;
     Panel2: TPanel;
     MemoMessages: TMemo;
-    Timer1: TTimer;
+    Button1: TButton;
     procedure BtnIniciarClick(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
-    FContext: IZeroMQ;
-    FPub: IZMQPair;
-    FRec: IZMQPair;
-    ServerThread: TServerThread;
+    FContext: TZeroMQ;
+    ServerInfo: TThreadInfo;
   public
     { Public declarations }
+
   end;
+
+  procedure AddMessage(const aMessage: string);
+  function ServerThread(PContext: Pointer): Integer;
+  procedure CloseThread(ThreadHandle : Integer);
 
 var
   FPrincipal: TFPrincipal;
@@ -47,59 +44,56 @@ implementation
 
 {$R *.dfm}
 
-{ TWorkerThread }
-
-constructor TServerThread.Create(Publisher, Receiver: IZMQPair; MemoMessage: TMemo);
+procedure AddMessage(const aMessage: string);
 begin
-  inherited Create(False);
-  FMessage := '';
-  FPublisher := Publisher;
-  FReceiver := Receiver;
-  FMemoMessage := MemoMessage;
+  FPrincipal.MemoMessages.Lines.Add(aMessage);
 end;
 
-destructor TServerThread.Destroy;
+function ServerThread(PContext: Pointer): Integer;
+var
+  Rec: IZMQPair;
+  Pub: IZMQPair;
+  Context: IZeroMQ;
+  Received: String;
 begin
-  inherited;
-end;
+  Context := PZeroMQ(PContext)^;
 
-procedure TServerThread.Execute;
-begin
-  FMessage := FReceiver.ReceiveString;
-  Synchronize(WriteMessage);
-  FPublisher.SendString(FMessage);
-end;
+  Pub := Context.Start(ZMQSocket.Publisher);
+  Pub.Bind('tcp://*:5000');
+  Rec := Context.Start(ZMQSocket.Pull);
+  Rec.Bind('tcp://*:5001');
 
-procedure TServerThread.WriteMessage;
-begin
-  if Assigned(FMemoMessage) then
+  while true do
   begin
-    FMemoMessage.Lines.Add('Received: ' + FMessage);
+    Received := Rec.ReceiveString;
+    AddMessage('Received: ' + Received);
+    Pub.SendString(Received);
   end;
+  Result := 0;
+end;
+
+procedure CloseThread(ThreadHandle : Integer);
+begin
+  if ThreadHandle <> 0 then
+    CloseHandle(ThreadHandle);
 end;
 
 { TFPrincipal }
 
+procedure TFPrincipal.Button1Click(Sender: TObject);
+begin
+  //
+end;
+
 procedure TFPrincipal.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  if Assigned(ServerThread) then
-  begin
-    FreeAndNil(ServerThread);
-  end;
-
+  CloseThread(ServerInfo.ThreadHandle);
 end;
 
 procedure TFPrincipal.BtnIniciarClick(Sender: TObject);
 begin
   FContext := TZeroMQ.Create;
-
-  FPub := FContext.Start(ZMQSocket.Publisher);
-  FPub.Bind('tcp://*:5000');
-
-  FRec := FContext.Start(ZMQSocket.Pull);
-  FRec.Bind('tcp://*:5001');
-
-  ServerThread := TServerThread.Create(FPub, FRec, MemoMessages);
+  ServerInfo.ThreadHandle := BeginThread(nil, 0, @ServerThread, @FContext, 0, ServerInfo.ThreadId);
   BtnIniciar.Enabled := False;
 end;
 

@@ -33,6 +33,7 @@ requires
 contains
   ZeroMQ.API in 'ZeroMQ.API.pas',
   ZeroMQ in 'ZeroMQ.pas',
-  WorkerThread in 'WorkerThread.pas';
+  WorkerThread in 'WorkerThread.pas',
+  BaseUtil in 'BaseUtil.pas';
 
 end.
