@@ -179,8 +179,10 @@ begin
 end;
 
 procedure TFChat.SendMessage;
+const
+  CSEND = '%s: %s';
 begin
-  FSender.SendString(EdMessage.Text);
+  FSender.SendString(Format(CSEND, [Nickname, EdMessage.Text]));
   EdMessage.Text := '';
 end;
 

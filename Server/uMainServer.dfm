@@ -12,6 +12,7 @@ object FMainServer: TFMainServer
   Font.Style = []
   OldCreateOrder = False
   OnClose = FormClose
+  OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
   object Panel1: TPanel
@@ -38,6 +39,7 @@ object FMainServer: TFMainServer
       Caption = 'Pausar'
       Enabled = False
       TabOrder = 1
+      OnClick = BtnPausarClick
     end
   end
   object Panel2: TPanel

@@ -41,8 +41,10 @@ type
     procedure Close;
     { Server pair }
     function Bind(const Address: string): Integer;
+    function Unbind(const Address: string): Integer;
     { Client pair }
     function Connect(const Address: string): Integer;
+    function Disconnect(const Address: string): Integer;
     { Socket Options }
     function SocketType: ZMQSocket;
     { Required for ZMQ.Subscriber pair }
@@ -121,8 +123,10 @@ type
     procedure Close;
     { Server pair }
     function Bind(const Address: string): Integer;
+    function Unbind(const Address: string): Integer;
     { Client pair }
     function Connect(const Address: string): Integer;
+    function Disconnect(const Address: string): Integer;
     { Required for ZMQ.Subscriber pair }
     function Subscribe(const Filter: string): Integer;
     function HaveMore: Boolean;
@@ -290,6 +294,11 @@ begin
   inherited;
 end;
 
+function TZMQPair.Disconnect(const Address: string): Integer;
+begin
+  Result := zmq_disconnect(FSocket, PAnsiChar(AnsiString(Address)));
+end;
+
 procedure TZMQPair.Close;
 begin
   FContext.FPairs.Remove(Self);
@@ -313,6 +322,11 @@ var
 begin
   str := UTF8String(Filter);
   Result := zmq_setsockopt(FSocket, ZMQ_SUBSCRIBE, PAnsiChar(str), Length(str));
+end;
+
+function TZMQPair.Unbind(const Address: string): Integer;
+begin
+  Result := zmq_unbind(FSocket, PAnsiChar(AnsiString(Address)));
 end;
 
 function TZMQPair.HaveMore: Boolean;
