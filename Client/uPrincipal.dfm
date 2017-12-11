@@ -16,16 +16,16 @@ object FPrincipal: TFPrincipal
   PixelsPerInch = 96
   TextHeight = 13
   object Label1: TLabel
-    Left = 8
-    Top = 8
+    Left = 7
+    Top = 5
     Width = 49
     Height = 13
     Caption = 'Nickname:'
   end
   object edNickname: TEdit
-    Left = 8
-    Top = 32
-    Width = 269
+    Left = 62
+    Top = 2
+    Width = 197
     Height = 21
     TabOrder = 0
     OnKeyDown = edNicknameKeyDown

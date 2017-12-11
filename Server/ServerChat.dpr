@@ -2,13 +2,13 @@ program ServerChat;
 
 uses
   Vcl.Forms,
-  uPrincipal in 'uPrincipal.pas' {FPrincipal};
+  uMainServer in 'uMainServer.pas' {FMainServer};
 
 {$R *.res}
 
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  Application.CreateForm(TFPrincipal, FPrincipal);
+  Application.CreateForm(TFMainServer, FMainServer);
   Application.Run;
 end.

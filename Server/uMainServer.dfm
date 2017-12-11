@@ -1,4 +1,4 @@
-object FPrincipal: TFPrincipal
+object FMainServer: TFMainServer
   Left = 0
   Top = 0
   Caption = 'ZeroMQ - Server'
@@ -38,15 +38,6 @@ object FPrincipal: TFPrincipal
       Caption = 'Pausar'
       Enabled = False
       TabOrder = 1
-    end
-    object Button1: TButton
-      Left = 184
-      Top = 10
-      Width = 75
-      Height = 25
-      Caption = 'Button1'
-      TabOrder = 2
-      OnClick = Button1Click
     end
   end
   object Panel2: TPanel

@@ -1,4 +1,4 @@
-unit uPrincipal;
+unit uMainServer;
 
 interface
 
@@ -14,15 +14,13 @@ type
     ThreadId : Cardinal;
   end;
 
-  TFPrincipal = class(TForm)
+  TFMainServer = class(TForm)
     Panel1: TPanel;
     BtnIniciar: TButton;
     BtnPausar: TButton;
     Panel2: TPanel;
     MemoMessages: TMemo;
-    Button1: TButton;
     procedure BtnIniciarClick(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
@@ -38,7 +36,7 @@ type
   procedure CloseThread(ThreadHandle : Integer);
 
 var
-  FPrincipal: TFPrincipal;
+  FMainServer: TFMainServer;
 
 implementation
 
@@ -46,7 +44,7 @@ implementation
 
 procedure AddMessage(const aMessage: string);
 begin
-  FPrincipal.MemoMessages.Lines.Add(aMessage);
+  FMainServer.MemoMessages.Lines.Add(aMessage);
 end;
 
 function ServerThread(PContext: Pointer): Integer;
@@ -78,19 +76,14 @@ begin
     CloseHandle(ThreadHandle);
 end;
 
-{ TFPrincipal }
+{ TFMainServer }
 
-procedure TFPrincipal.Button1Click(Sender: TObject);
-begin
-  //
-end;
-
-procedure TFPrincipal.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TFMainServer.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   CloseThread(ServerInfo.ThreadHandle);
 end;
 
-procedure TFPrincipal.BtnIniciarClick(Sender: TObject);
+procedure TFMainServer.BtnIniciarClick(Sender: TObject);
 begin
   FContext := TZeroMQ.Create;
   ServerInfo.ThreadHandle := BeginThread(nil, 0, @ServerThread, @FContext, 0, ServerInfo.ThreadId);

@@ -22,12 +22,16 @@ type
     Panel1: TPanel;
     btnConnect: TButton;
     LbMessages: TListBox;
+    edNickname: TEdit;
+    Label1: TLabel;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
     procedure EdMessageKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
     procedure FormCreate(Sender: TObject);
     procedure btnConnectClick(Sender: TObject);
+    procedure edNicknameKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
   private
     { Private declarations }
     FConected: Boolean;
@@ -35,8 +39,6 @@ type
     FContext: TZeroMQ;
     FSender: IZMQPair;
     ReceiverInfo: TThreadInfo;
-    procedure Initialize;
-    procedure ShowMessagePanel;
     procedure CreateSockets;
     procedure UpdateStatusBar;
     procedure SendMessage;
@@ -44,6 +46,7 @@ type
     procedure Connect;
     procedure EnableMessagePanel;
     procedure EnableConnectButton;
+    procedure ValidateNickname;
   public
     { Public declarations }
 
@@ -106,6 +109,7 @@ end;
 
 procedure TFChat.Connect;
 begin
+  ValidateNickname;
   CreateSockets;
   CreateReceiverThread;
   FConected := True;
@@ -120,10 +124,13 @@ begin
 end;
 
 procedure TFChat.CreateSockets;
+const
+  CENTER = '%s acaba de entrar.';
 begin
   FContext := TZeroMQ.Create;
   FSender := FContext.Start(ZMQSocket.Push);
   FSender.Connect('tcp://localhost:5001');
+  FSender.SendString(Format(CENTER, [Nickname]));
 end;
 
 procedure TFChat.EdMessageKeyDown(Sender: TObject; var Key: Word;
@@ -132,6 +139,15 @@ begin
   if (Chr(Key) = #13) and (Length(Trim(EdMessage.Text)) > 0) then
   begin
     SendMessage;
+  end;
+end;
+
+procedure TFChat.edNicknameKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if Chr(Key) = #13 Then
+  begin
+    Connect;
   end;
 end;
 
@@ -162,20 +178,11 @@ begin
   UpdateStatusBar;
 end;
 
-procedure TFChat.Initialize;
-begin
-end;
-
 procedure TFChat.SendMessage;
 begin
   FSender.SendString(EdMessage.Text);
   EdMessage.Text := '';
 end;
-
-procedure TFChat.ShowMessagePanel;
-begin
-end;
-
 
 procedure TFChat.UpdateStatusBar;
 const
@@ -186,6 +193,16 @@ begin
     StatusB.Panels[0].Text := Format(CONAS, [Nickname])
   else
     StatusB.Panels[0].Text := UNCON;
+end;
+
+procedure TFChat.ValidateNickname;
+begin
+  Nickname := Trim(edNickname.Text);
+  if Length(Nickname) = 0 then
+  begin
+    edNickname.SetFocus;
+    raise Exception.Create('Nickname não informado.');
+  end;
 end;
 
 end.

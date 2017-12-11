@@ -60,7 +60,7 @@ procedure TFPrincipal.ShowChatForm;
 begin
   FChat := TFChat.Create(Application);
   try
-    Hide;
+//    Hide;
     FChat.Nickname := edNickname.Text;
     FChat.ShowModal;
   finally

@@ -10,7 +10,7 @@ uses
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  Application.CreateForm(TFPrincipal, FPrincipal);
+  Application.CreateForm(TFChat, FChat);
   //  IsMultiThread := True;
   Application.Run;
 end.
