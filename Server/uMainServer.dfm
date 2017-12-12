@@ -58,8 +58,6 @@ object FMainServer: TFMainServer
       ItemHeight = 13
       TabOrder = 0
       OnDblClick = MemoMessagesDblClick
-      ExplicitLeft = 2
-      ExplicitTop = -2
     end
   end
 end

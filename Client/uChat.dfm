@@ -88,7 +88,6 @@ object FChat: TFChat
       ItemHeight = 13
       TabOrder = 1
       OnClick = MemoMessagesClick
-      ExplicitLeft = -1
     end
     object PnImage: TPanel
       Left = 288
@@ -112,7 +111,7 @@ object FChat: TFChat
       end
     end
   end
-  object Panel1: TPanel
+  object PnTop: TPanel
     Left = 0
     Top = 0
     Width = 434

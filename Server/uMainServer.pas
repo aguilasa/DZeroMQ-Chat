@@ -76,7 +76,8 @@ begin
     Value := aReceivedData.StringMessage
   else
     Value := Format('%s: %s', [aReceivedData.Nickname, aReceivedData.StringMessage]);
-  FMainServer.MemoMessages.Items.Add(Value);
+
+  FMainServer.MemoMessages.ItemIndex := FMainServer.MemoMessages.Items.Add(Value);
 end;
 
 procedure AddMessage(aMessage: TArray<TBytes>);
