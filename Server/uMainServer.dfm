@@ -49,13 +49,17 @@ object FMainServer: TFMainServer
     Height = 160
     Align = alClient
     TabOrder = 1
-    object MemoMessages: TMemo
+    object MemoMessages: TListBox
       Left = 1
       Top = 1
       Width = 445
       Height = 158
       Align = alClient
+      ItemHeight = 13
       TabOrder = 0
+      OnDblClick = MemoMessagesDblClick
+      ExplicitLeft = 2
+      ExplicitTop = -2
     end
   end
 end

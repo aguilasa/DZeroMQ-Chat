@@ -29,66 +29,75 @@ object FChat: TFChat
         Text = 'Conectado como: '
         Width = 105
       end>
-    ExplicitTop = 339
-    ExplicitWidth = 636
   end
   object PnMessages: TPanel
     Left = 0
-    Top = 28
+    Top = 27
     Width = 434
-    Height = 254
+    Height = 255
     Align = alClient
     TabOrder = 0
-    ExplicitWidth = 636
-    ExplicitHeight = 311
     object Panel2: TPanel
       Left = 1
-      Top = 217
+      Top = 218
       Width = 432
       Height = 36
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 0
-      ExplicitTop = 274
-      ExplicitWidth = 634
       DesignSize = (
         432
         36)
       object EdMessage: TEdit
         Left = 7
         Top = 6
-        Width = 417
+        Width = 355
         Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 0
         OnKeyDown = EdMessageKeyDown
-        ExplicitWidth = 619
+      end
+      object BtnImagem: TButton
+        Left = 364
+        Top = 4
+        Width = 66
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = 'Imagem'
+        TabOrder = 1
+        OnClick = BtnImagemClick
       end
     end
-    object LbMessages: TListBox
+    object MemoMessages: TListBox
       Left = 1
       Top = 1
-      Width = 432
-      Height = 216
+      Width = 287
+      Height = 217
       Align = alClient
       ItemHeight = 13
       TabOrder = 1
-      ExplicitLeft = 2
-      ExplicitWidth = 434
-      ExplicitHeight = 290
+      OnClick = MemoMessagesClick
+      ExplicitWidth = 295
+    end
+    object PnImage: TPanel
+      Left = 288
+      Top = 1
+      Width = 145
+      Height = 217
+      Align = alRight
+      TabOrder = 2
     end
   end
   object Panel1: TPanel
     Left = 0
     Top = 0
     Width = 434
-    Height = 28
+    Height = 27
     Align = alTop
     TabOrder = 2
-    ExplicitWidth = 636
     DesignSize = (
       434
-      28)
+      27)
     object Label1: TLabel
       Left = 4
       Top = 6
@@ -115,5 +124,14 @@ object FChat: TFChat
       TabOrder = 1
       OnKeyDown = edNicknameKeyDown
     end
+  end
+  object openDialog: TOpenPictureDialog
+    Filter = 
+      'All (*.gif;*.png;*.jpg;*.jpeg;*.bmp)|*.gif;*.png;*.jpg;*.jpeg;*.' +
+      'bmp|GIF Image (*.gif)|*.gif|Portable Network Graphics (*.png)|*.' +
+      'png|JPEG Image File (*.jpg)|*.jpg|JPEG Image File (*.jpeg)|*.jpe' +
+      'g|Bitmaps (*.bmp)|*.bmp'
+    Left = 272
+    Top = 131
   end
 end

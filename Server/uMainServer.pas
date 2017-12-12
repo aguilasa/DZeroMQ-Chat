@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
   System.Classes, Vcl.Graphics,   Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  ZeroMQ, ZeroMQ.API, Vcl.StdCtrls, Vcl.ExtCtrls;
+  ZeroMQ, ZeroMQ.API, Vcl.StdCtrls, Vcl.ExtCtrls, BaseUtil;
 
 type
 
@@ -23,11 +23,12 @@ type
     BtnIniciar: TButton;
     BtnPausar: TButton;
     Panel2: TPanel;
-    MemoMessages: TMemo;
+    MemoMessages: TListBox;
     procedure BtnIniciarClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure BtnPausarClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure MemoMessagesDblClick(Sender: TObject);
   private
     { Private declarations }
     FContext: TZeroMQ;
@@ -40,7 +41,9 @@ type
 
   end;
 
-  procedure AddMessage(const aMessage: string);
+  procedure AddMessage(aMessage: TArray<TBytes>);
+  procedure AddStringMessage(aReceivedData: TReceivedData);
+  procedure AddStreamMessage(aReceivedData: TReceivedData);
 
 var
   FMainServer: TFMainServer;
@@ -49,9 +52,52 @@ implementation
 
 {$R *.dfm}
 
-procedure AddMessage(const aMessage: string);
+procedure AddStreamMessage(aReceivedData: TReceivedData);
+var
+  StreamData: TStreamData;
+  Buffer: TBytes;
+  Len: Integer;
+  S: string;
 begin
-  FMainServer.MemoMessages.Lines.Add(aMessage);
+  StreamData := TStreamData.Create;
+  StreamData.Name := aReceivedData.StreamName;
+  Buffer := aReceivedData.StreamData;
+  Len := Length(Buffer);
+  StreamData.Stream.Read(Buffer, Len);
+  S := Format('%s: enviou imagem.', [aReceivedData.Nickname]);
+  FMainServer.MemoMessages.Items.AddObject(S, StreamData);
+end;
+
+procedure AddStringMessage(aReceivedData: TReceivedData);
+var
+  Value: string;
+begin
+  if aReceivedData.MessageType = mtJoin then
+    Value := aReceivedData.StringMessage
+  else
+    Value := Format('%s: %s', [aReceivedData.Nickname, aReceivedData.StringMessage]);
+  FMainServer.MemoMessages.Items.Add(Value);
+end;
+
+procedure AddMessage(aMessage: TArray<TBytes>);
+var
+  Reader: TReaderData;
+  Received: TReceivedData;
+begin
+  Reader := TReaderData.Create(aMessage);;
+  try
+    Received := Reader.GetReceivedData;
+    if Received.MessageType in [mtJoin, mtString] then
+    begin
+      AddStringMessage(Received);
+    end
+    else
+    begin
+      AddStreamMessage(Received);
+    end;
+  finally
+    Reader.Free;
+  end;
 end;
 
 { TFMainServer }
@@ -87,10 +133,25 @@ begin
   Receiver := FContext.Start(ZMQSocket.Pull);
 end;
 
+procedure TFMainServer.MemoMessagesDblClick(Sender: TObject);
+var
+  StreamData: TStreamData;
+  Index: Integer;
+begin
+  Index := MemoMessages.ItemIndex;
+  if Index > -1 then
+  begin
+    StreamData := TStreamData(MemoMessages.Items.Objects[Index]);
+    if Assigned(StreamData) then
+    begin
+
+    end;
+  end;
+
+end;
+
 procedure TFMainServer.BtnIniciarClick(Sender: TObject);
 begin
-//  ServerInfo.ThreadHandle := BeginThread(nil, 0, @ServerThread, @FContext, 0, ServerInfo.ThreadId);
-
   Publisher.Bind('tcp://*:5000');
   Receiver.Bind('tcp://*:5001');
 
@@ -112,15 +173,15 @@ end;
 
 procedure TSThread.Execute;
 var
-  Received: String;
+  Received: TArray<TBytes>;
 begin
   while True do
   begin
-    Received := FReceiver.ReceiveString;
+    Received := FReceiver.ReceiveListBytes;
     if not Terminated then
     begin
-      AddMessage('Received: ' + Received);
-      FPublisher.SendString(Received);
+      AddMessage(Received);
+      FPublisher.SendListBytes(Received);
     end
     else
       Break;

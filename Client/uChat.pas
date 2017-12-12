@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, ZeroMQ, ZeroMQ.API, Vcl.ExtCtrls,
-  Vcl.StdCtrls, Vcl.ComCtrls, SyncObjs, Vcl.ToolWin;
+  Vcl.StdCtrls, Vcl.ComCtrls, SyncObjs, Vcl.ToolWin, BaseUtil, Vcl.ExtDlgs;
 
 type
 
@@ -21,9 +21,12 @@ type
     EdMessage: TEdit;
     Panel1: TPanel;
     btnConnect: TButton;
-    LbMessages: TListBox;
+    MemoMessages: TListBox;
     edNickname: TEdit;
     Label1: TLabel;
+    openDialog: TOpenPictureDialog;
+    BtnImagem: TButton;
+    PnImage: TPanel;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
     procedure EdMessageKeyDown(Sender: TObject; var Key: Word;
@@ -32,6 +35,8 @@ type
     procedure btnConnectClick(Sender: TObject);
     procedure edNicknameKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    procedure BtnImagemClick(Sender: TObject);
+    procedure MemoMessagesClick(Sender: TObject);
   private
     { Private declarations }
     FConected: Boolean;
@@ -47,11 +52,18 @@ type
     procedure EnableMessagePanel;
     procedure EnableConnectButton;
     procedure ValidateNickname;
+    procedure SendJoinMessage;
+    procedure SendStringMessage(const aMessage: string; aType: TMessageType = mtString);
+    procedure SendStreamMessage(aStream: TMemoryStream; const aName: string);
   public
     { Public declarations }
 
     property Nickname: string read FNickname write FNickname;
   end;
+
+  procedure AddMessage(aMessage: TArray<TBytes>);
+  procedure AddStringMessage(aReceivedData: TReceivedData);
+  procedure AddStreamMessage(aReceivedData: TReceivedData);
 
 var
   FChat: TFChat;
@@ -60,9 +72,52 @@ implementation
 
 {$R *.dfm}
 
-procedure AddMessage(const aMessage: string);
+procedure AddStreamMessage(aReceivedData: TReceivedData);
+var
+  StreamData: TStreamData;
+  Buffer: TBytes;
+  Len: Integer;
+  S: string;
 begin
-  FChat.LbMessages.Items.Add(aMessage);
+  StreamData := TStreamData.Create;
+  StreamData.Name := aReceivedData.StreamName;
+  Buffer := aReceivedData.StreamData;
+  Len := Length(Buffer);
+  StreamData.Stream.Read(Buffer, Len);
+  S := Format('%s: enviou imagem.', [aReceivedData.Nickname]);
+  FChat.MemoMessages.Items.AddObject(S, StreamData);
+end;
+
+procedure AddStringMessage(aReceivedData: TReceivedData);
+var
+  Value: string;
+begin
+  if aReceivedData.MessageType = mtJoin then
+    Value := aReceivedData.StringMessage
+  else
+    Value := Format('%s: %s', [aReceivedData.Nickname, aReceivedData.StringMessage]);
+  FChat.MemoMessages.Items.Add(Value);
+end;
+
+procedure AddMessage(aMessage: TArray<TBytes>);
+var
+  Reader: TReaderData;
+  Received: TReceivedData;
+begin
+  Reader := TReaderData.Create(aMessage);;
+  try
+    Received := Reader.GetReceivedData;
+    if Received.MessageType in [mtJoin, mtString] then
+    begin
+      AddStringMessage(Received);
+    end
+    else
+    begin
+      AddStreamMessage(Received);
+    end;
+  finally
+    Reader.Free;
+  end;
 end;
 
 function ReceiverThread(PContext: Pointer): Integer;
@@ -70,7 +125,7 @@ var
   Receiver: IZMQPair;
   Poller: IZMQPoll;
   Context: IZeroMQ;
-  Received: String;
+  Received: TArray<TBytes>;
   Events: Integer;
 begin
   Context := PZeroMQ(PContext)^;
@@ -87,7 +142,7 @@ begin
     Events := Poller.PollOnce;
     if Events > 0 then
     begin
-      Received := Receiver.ReceiveString;
+      Received := Receiver.ReceiveListBytes;
       AddMessage(Received);
     end;
   end;
@@ -107,6 +162,25 @@ begin
   Connect;
 end;
 
+procedure TFChat.BtnImagemClick(Sender: TObject);
+var
+  Stream: TMemoryStream;
+  FileName, FilePath: String;
+begin
+  if openDialog.Execute then
+  begin
+    FilePath := openDialog.FileName;
+    FileName := ExtractFileName(FilePath);
+    Stream := TMemoryStream.Create;
+    try
+      Stream.LoadFromFile(FilePath);
+      SendStreamMessage(Stream, FileName);
+    finally
+      Stream.Free;
+    end;
+  end;
+end;
+
 procedure TFChat.Connect;
 begin
   ValidateNickname;
@@ -124,13 +198,11 @@ begin
 end;
 
 procedure TFChat.CreateSockets;
-const
-  CENTER = '%s acaba de entrar.';
 begin
   FContext := TZeroMQ.Create;
   FSender := FContext.Start(ZMQSocket.Push);
   FSender.Connect('tcp://localhost:5001');
-  FSender.SendString(Format(CENTER, [Nickname]));
+  SendJoinMessage;
 end;
 
 procedure TFChat.EdMessageKeyDown(Sender: TObject; var Key: Word;
@@ -178,12 +250,64 @@ begin
   UpdateStatusBar;
 end;
 
-procedure TFChat.SendMessage;
-const
-  CSEND = '%s: %s';
+procedure TFChat.MemoMessagesClick(Sender: TObject);
+var
+  StreamData: TStreamData;
+  Index: Integer;
 begin
-  FSender.SendString(Format(CSEND, [Nickname, EdMessage.Text]));
+  Index := MemoMessages.ItemIndex;
+  if Index > -1 then
+  begin
+    StreamData := TStreamData(MemoMessages.Items.Objects[Index]);
+    if Assigned(StreamData) then
+    begin
+
+    end;
+  end;
+end;
+
+procedure TFChat.SendJoinMessage;
+const
+  CENTER = '%s acaba de entrar.';
+begin
+  SendStringMessage(Format(CENTER, [Nickname]), mtJoin);
+end;
+
+procedure TFChat.SendMessage;
+begin
+  SendStringMessage(EdMessage.Text);
   EdMessage.Text := '';
+end;
+
+procedure TFChat.SendStreamMessage(aStream: TMemoryStream; const aName: string);
+var
+  Writer: TBytesWriter;
+begin
+  Writer := TBytesWriter.Create;
+  try
+    Writer.WriteByte(Ord(mtStream));
+    Writer.WriteString(Nickname);
+    Writer.WriteString(aName);
+    Writer.WriteStream(aStream);
+    FSender.SendListBytes(Writer.Bytes);
+  finally
+    Writer.Free;
+  end;
+end;
+
+procedure TFChat.SendStringMessage(const aMessage: string; aType: TMessageType = mtString);
+var
+  Writer: TBytesWriter;
+begin
+  Writer := TBytesWriter.Create;
+  try
+    Writer.WriteByte(Ord(aType));
+    Writer.WriteString(Nickname);
+    Writer.WriteString(aMessage);
+    FSender.SendListBytes(Writer.Bytes);
+  finally
+    Writer.Free;
+  end;
 end;
 
 procedure TFChat.UpdateStatusBar;

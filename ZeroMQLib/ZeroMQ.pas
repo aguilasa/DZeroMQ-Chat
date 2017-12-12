@@ -8,7 +8,7 @@ unit ZeroMQ;
 interface
 
 uses
-  System.Classes, System.Generics.Collections,
+  System.Classes, System.Generics.Collections, System.SysUtils,
   ZeroMQ.API;
 
 type
@@ -65,6 +65,11 @@ type
     { A partir daqui é meu }
     function SendStream(const Data: TMemoryStream; Flags: MessageFlags): Integer; overload;
     function SendStream(const Data: TMemoryStream; DontWait: Boolean = False): Integer; overload;
+    function SendBytes(const Data: TBytes; Flags: MessageFlags): Integer; overload;
+    function SendBytes(const Data: TBytes; DontWait: Boolean = False): Integer; overload;
+    function ReceiveBytes(DontWait: Boolean = False): TBytes;
+    function SendListBytes(const Data: array of TBytes; DontWait: Boolean = False): Integer;
+    function ReceiveListBytes(const DontWait: Boolean = False): TArray<TBytes>;
   end;
 
   PollEvent = (PollIn, PollOut, PollErr);
@@ -147,6 +152,11 @@ type
     { Implementação de envio de Streams }
     function SendStream(const Data: TMemoryStream; Flags: MessageFlags): Integer; overload;
     function SendStream(const Data: TMemoryStream; DontWait: Boolean = False): Integer; overload;
+    function SendBytes(const Data: TBytes; Flags: MessageFlags): Integer; overload;
+    function SendBytes(const Data: TBytes; DontWait: Boolean = False): Integer; overload;
+    function ReceiveBytes(DontWait: Boolean = False): TBytes;
+    function SendListBytes(const Data: array of TBytes; DontWait: Boolean = False): Integer;
+    function ReceiveListBytes(const DontWait: Boolean = False): TArray<TBytes>;
   end;
 
   TZMQPoll = class(TInterfacedObject, IZMQPoll)
@@ -339,6 +349,38 @@ begin
   Result := more > 0;
 end;
 
+function TZMQPair.ReceiveBytes(DontWait: Boolean): TBytes;
+var
+  Msg: TZmqMsg;
+  Bytes: TBytes;
+  Len: Cardinal;
+begin
+  zmq_msg_init(@msg);
+  if zmq_recvmsg(FSocket, @msg, Ord(DontWait)) = 0 then
+    Exit(Bytes);
+
+  Len := zmq_msg_size(@msg);
+  SetLength(Bytes, Len);
+  Move(zmq_msg_data(@msg)^, Bytes[0], Len);
+  zmq_msg_close(@msg);
+  Result := Bytes;
+end;
+
+function TZMQPair.ReceiveListBytes(const DontWait: Boolean): TArray<TBytes>;
+var
+  L: TList<TBytes>;
+begin
+  L := TList<TBytes>.Create;
+  try
+    repeat
+      L.Add(ReceiveBytes(DontWait));
+    until not HaveMore;
+    Result := L.ToArray;
+  finally
+    L.Free;
+  end;
+end;
+
 function TZMQPair.ReceiveMessage(var Msg: TZmqMsg;
   Flags: MessageFlags): Integer;
 begin
@@ -374,6 +416,49 @@ begin
     Result := L.ToArray;
   finally
     L.Free;
+  end;
+end;
+
+function TZMQPair.SendBytes(const Data: TBytes; Flags: MessageFlags): Integer;
+var
+  Msg: TZmqMsg;
+  Len: Integer;
+begin
+  Len := Length(Data);
+  Result := zmq_msg_init_size(@msg, len);
+  if Result = 0 then
+  begin
+    Move(Data[0], zmq_msg_data(@msg)^, len);
+    Result := SendMessage(msg, Flags);
+    zmq_msg_close(@msg);
+  end;
+end;
+
+function TZMQPair.SendBytes(const Data: TBytes; DontWait: Boolean): Integer;
+begin
+  Result := SendBytes(Data, MessageFlags(Ord(DontWait)));
+end;
+
+function TZMQPair.SendListBytes(const Data: array of TBytes;
+  DontWait: Boolean): Integer;
+var
+  I: Integer;
+  Flags: MessageFlags;
+begin
+  Result := 0;
+  if Length(Data) = 1 then
+    Result := SendBytes(Data[0], DontWait)
+  else
+  begin
+    Flags := [MessageFlag.SendMore] + MessageFlags(Ord(DontWait));
+    for I := Low(Data) to High(Data) do
+    begin
+      if I = High(Data) then
+        Exclude(Flags, MessageFlag.SendMore);
+      Result := SendBytes(Data[I], Flags);
+      if Result < 0 then
+        Break;
+    end;
   end;
 end;
 
