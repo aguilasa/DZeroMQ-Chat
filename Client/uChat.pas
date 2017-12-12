@@ -5,7 +5,7 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, ZeroMQ, ZeroMQ.API, Vcl.ExtCtrls,
-  Vcl.StdCtrls, Vcl.ComCtrls, SyncObjs, Vcl.ToolWin, BaseUtil, Vcl.ExtDlgs;
+  Vcl.StdCtrls, Vcl.ComCtrls, SyncObjs, Vcl.ToolWin, BaseUtil, Vcl.ExtDlgs, JPEG;
 
 type
 
@@ -27,6 +27,8 @@ type
     openDialog: TOpenPictureDialog;
     BtnImagem: TButton;
     PnImage: TPanel;
+    Image1: TImage;
+    Splitter1: TSplitter;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
     procedure EdMessageKeyDown(Sender: TObject; var Key: Word;
@@ -83,7 +85,8 @@ begin
   StreamData.Name := aReceivedData.StreamName;
   Buffer := aReceivedData.StreamData;
   Len := Length(Buffer);
-  StreamData.Stream.Read(Buffer, Len);
+  StreamData.Stream.Write(Buffer, Len);
+  StreamData.Stream.Seek(0, 0);
   S := Format('%s: enviou imagem.', [aReceivedData.Nickname]);
   FChat.MemoMessages.Items.AddObject(S, StreamData);
 end;
@@ -254,7 +257,10 @@ procedure TFChat.MemoMessagesClick(Sender: TObject);
 var
   StreamData: TStreamData;
   Index: Integer;
+  JPEGImage: TJPEGImage;
 begin
+  Splitter1.Visible := False;
+  PnImage.Visible := False;
   Index := MemoMessages.ItemIndex;
   if Index > -1 then
   begin
@@ -262,6 +268,17 @@ begin
     if Assigned(StreamData) then
     begin
 
+      PnImage.Visible := True;
+      Splitter1.Visible := True;
+
+      StreamData.Stream.Position := 0;
+      JPEGImage := TJPEGImage.Create;
+      try
+        JPEGImage.LoadFromStream(StreamData.Stream);
+        Image1.Picture.Assign(JPEGImage);
+      finally
+        JPEGImage.Free;
+      end;
     end;
   end;
 end;

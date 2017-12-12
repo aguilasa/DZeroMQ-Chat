@@ -37,6 +37,16 @@ object FChat: TFChat
     Height = 255
     Align = alClient
     TabOrder = 0
+    object Splitter1: TSplitter
+      Left = 285
+      Top = 1
+      Height = 217
+      Align = alRight
+      Visible = False
+      ExplicitLeft = 272
+      ExplicitTop = 48
+      ExplicitHeight = 100
+    end
     object Panel2: TPanel
       Left = 1
       Top = 218
@@ -71,13 +81,14 @@ object FChat: TFChat
     object MemoMessages: TListBox
       Left = 1
       Top = 1
-      Width = 287
+      Width = 284
       Height = 217
       Align = alClient
+      Constraints.MinWidth = 280
       ItemHeight = 13
       TabOrder = 1
       OnClick = MemoMessagesClick
-      ExplicitWidth = 295
+      ExplicitLeft = -1
     end
     object PnImage: TPanel
       Left = 288
@@ -86,6 +97,19 @@ object FChat: TFChat
       Height = 217
       Align = alRight
       TabOrder = 2
+      Visible = False
+      object Image1: TImage
+        Left = 1
+        Top = 1
+        Width = 143
+        Height = 215
+        Align = alClient
+        Stretch = True
+        ExplicitLeft = 64
+        ExplicitTop = 96
+        ExplicitWidth = 105
+        ExplicitHeight = 105
+      end
     end
   end
   object Panel1: TPanel
@@ -126,11 +150,7 @@ object FChat: TFChat
     end
   end
   object openDialog: TOpenPictureDialog
-    Filter = 
-      'All (*.gif;*.png;*.jpg;*.jpeg;*.bmp)|*.gif;*.png;*.jpg;*.jpeg;*.' +
-      'bmp|GIF Image (*.gif)|*.gif|Portable Network Graphics (*.png)|*.' +
-      'png|JPEG Image File (*.jpg)|*.jpg|JPEG Image File (*.jpeg)|*.jpe' +
-      'g|Bitmaps (*.bmp)|*.bmp'
+    Filter = 'JPEG Image File (*.jpg)|*.jpg|JPEG Image File (*.jpeg)|*.jpeg'
     Left = 272
     Top = 131
   end
