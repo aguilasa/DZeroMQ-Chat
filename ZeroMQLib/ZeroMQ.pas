@@ -8,7 +8,7 @@ unit ZeroMQ;
 interface
 
 uses
-  System.Classes, System.Generics.Collections,
+  System.Classes, System.SysUtils, System.Generics.Collections,
   ZeroMQ.API;
 
 type
@@ -65,6 +65,7 @@ type
     { A partir daqui é meu }
     function SendStream(const Data: TMemoryStream; Flags: MessageFlags): Integer; overload;
     function SendStream(const Data: TMemoryStream; DontWait: Boolean = False): Integer; overload;
+    function ReceiveStream(DontWait: Boolean = False): TMemoryStream;
   end;
 
   PollEvent = (PollIn, PollOut, PollErr);
@@ -147,6 +148,7 @@ type
     { Implementação de envio de Streams }
     function SendStream(const Data: TMemoryStream; Flags: MessageFlags): Integer; overload;
     function SendStream(const Data: TMemoryStream; DontWait: Boolean = False): Integer; overload;
+    function ReceiveStream(DontWait: Boolean = False): TMemoryStream;
   end;
 
   TZMQPoll = class(TInterfacedObject, IZMQPoll)
@@ -345,6 +347,28 @@ begin
   Result := zmq_recvmsg(FSocket, @Msg, Byte(Flags));
 end;
 
+function TZMQPair.ReceiveStream(DontWait: Boolean): TMemoryStream;
+var
+  Msg: TZmqMsg;
+  Stream: TMemoryStream;
+  Len: Cardinal;
+  Buffer: TBytes;
+begin
+  Stream := TMemoryStream.Create;
+  zmq_msg_init(@Msg);
+  if zmq_recvmsg(FSocket, @Msg, Ord(DontWait)) = 0 then
+    Exit(Stream);
+
+  Len := zmq_msg_size(@msg);
+  SetLength(Buffer, Len);
+  Move(zmq_msg_data(@Msg)^, Buffer[0], Len);
+  zmq_msg_close(@Msg);
+
+  Stream.WriteBuffer(Buffer, Len);
+  Stream.Position := 0;
+  Result := Stream;
+end;
+
 function TZMQPair.ReceiveString(DontWait: Boolean): string;
 var
   msg: TZmqMsg;
@@ -387,15 +411,22 @@ var
   Msg: TZmqMsg;
   Buffer: PByte;
   Len: Integer;
+  Bytes: TBytes;
 begin
+  Data.Seek(0, soFromBeginning);
   Len := Data.Size;
-  GetMem(Buffer, Len);
-  Data.Position := 0;
-  Data.ReadBuffer(Buffer^, Len);
+
+  SetLength(Bytes, Len);
+  Data.Read(Bytes, 0, Len);
+
+//  GetMem(Buffer, Len);
+
+//  Data.Position := 0;
+//  Data.ReadBuffer(Buffer^, Len);
   Result := zmq_msg_init_size(@Msg, Len);
   if Result = 0 then
   begin
-    Move(Buffer^, zmq_msg_data(@Msg)^, Len);
+    Move(Bytes, zmq_msg_data(@Msg)^, Len);
     Result := SendMessage(Msg, Flags);
     zmq_msg_close(@Msg);
   end;

@@ -5,9 +5,17 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
   System.Classes, Vcl.Graphics,   Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  ZeroMQ, ZeroMQ.API, Vcl.StdCtrls, Vcl.ExtCtrls;
+  ZeroMQ, ZeroMQ.API, Vcl.StdCtrls, Vcl.ExtCtrls, BaseUtil;
 
 type
+
+  TStreamData = record
+    MessageType: TMessageType;
+    Nickname: string;
+    StringMessage: string;
+    StreamSize: Integer;
+    StreamData: TMemoryStream;
+  end;
 
   TSThread = class(TThread)
   private
@@ -49,10 +57,50 @@ implementation
 
 {$R *.dfm}
 
+function ProcessStreamData(aStream: TMemoryStream): TStreamData;
+var
+  Reader: TReader;
+  Buffer: PChar;
+  Size: Integer;
+begin
+  aStream.Seek(0, soFromBeginning);
+  Reader := TReader.Create(aStream);
+  try
+     Size := Reader.ReadByte;
+     Result.MessageType := TMessageType(Size);
+     Result.Nickname := Reader.ReadString;
+
+     if Result.MessageType in [mtJoin, mtString] then
+     begin
+       Result.StringMessage := Reader.ReadString;
+     end
+     else if Result.MessageType = mtStream then
+     begin
+
+     end;
+  finally
+     FreeAndNil(Reader);
+  end;
+end;
+
 procedure AddMessage(const aMessage: string);
 begin
   FMainServer.MemoMessages.Lines.Add(aMessage);
 end;
+
+procedure AddStreamMessage(aMessage: TMemoryStream);
+const
+  CSEND = '%s: %s';
+var
+  StreamData: TStreamData;
+begin
+  StreamData := ProcessStreamData(aMessage);
+  if StreamData.MessageType in [mtJoin, mtString] then
+  begin
+    AddMessage(Format(CSEND, [StreamData.Nickname, StreamData.StringMessage]));
+  end;
+end;
+
 
 { TFMainServer }
 
@@ -110,6 +158,7 @@ begin
   FPublisher := aPublisher;
 end;
 
+{
 procedure TSThread.Execute;
 var
   Received: String;
@@ -126,5 +175,29 @@ begin
       Break;
   end;
 end;
+}
+
+procedure TSThread.Execute;
+var
+  Received: TMemoryStream;
+begin
+  while True do
+  begin
+    Received := FReceiver.ReceiveStream;
+    if not Terminated then
+    begin
+      try
+        AddStreamMessage(Received);
+        FPublisher.SendStream(Received);
+      finally
+        Received.Free;
+      end;
+    end
+    else
+      Break;
+  end;
+end;
+
+
 
 end.

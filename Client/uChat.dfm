@@ -29,66 +29,69 @@ object FChat: TFChat
         Text = 'Conectado como: '
         Width = 105
       end>
-    ExplicitTop = 339
-    ExplicitWidth = 636
   end
   object PnMessages: TPanel
     Left = 0
-    Top = 28
+    Top = 27
     Width = 434
-    Height = 254
+    Height = 255
     Align = alClient
     TabOrder = 0
-    ExplicitWidth = 636
-    ExplicitHeight = 311
+    ExplicitTop = 28
+    ExplicitHeight = 254
     object Panel2: TPanel
       Left = 1
-      Top = 217
+      Top = 218
       Width = 432
       Height = 36
       Align = alBottom
       BevelOuter = bvNone
       TabOrder = 0
-      ExplicitTop = 274
-      ExplicitWidth = 634
+      ExplicitTop = 217
       DesignSize = (
         432
         36)
       object EdMessage: TEdit
         Left = 7
         Top = 6
-        Width = 417
+        Width = 354
         Height = 21
         Anchors = [akLeft, akTop, akRight]
         TabOrder = 0
         OnKeyDown = EdMessageKeyDown
-        ExplicitWidth = 619
+      end
+      object BtnImage: TButton
+        Left = 367
+        Top = 4
+        Width = 60
+        Height = 25
+        Anchors = [akTop, akRight]
+        Caption = 'Imagem'
+        TabOrder = 1
+        OnClick = BtnImageClick
       end
     end
     object LbMessages: TListBox
       Left = 1
       Top = 1
       Width = 432
-      Height = 216
+      Height = 217
       Align = alClient
       ItemHeight = 13
       TabOrder = 1
-      ExplicitLeft = 2
-      ExplicitWidth = 434
-      ExplicitHeight = 290
+      ExplicitHeight = 216
     end
   end
-  object Panel1: TPanel
+  object PnTop: TPanel
     Left = 0
     Top = 0
     Width = 434
-    Height = 28
+    Height = 27
     Align = alTop
     TabOrder = 2
-    ExplicitWidth = 636
     DesignSize = (
       434
-      28)
+      27)
     object Label1: TLabel
       Left = 4
       Top = 6

@@ -3,9 +3,9 @@ unit uChat;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, ZeroMQ, ZeroMQ.API, Vcl.ExtCtrls,
-  Vcl.StdCtrls, Vcl.ComCtrls, SyncObjs, Vcl.ToolWin;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes,
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ExtCtrls, Vcl.StdCtrls,
+  Vcl.ComCtrls, SyncObjs, Vcl.ToolWin, ZeroMQ, ZeroMQ.API, BaseUtil;
 
 type
 
@@ -19,11 +19,12 @@ type
     PnMessages: TPanel;
     Panel2: TPanel;
     EdMessage: TEdit;
-    Panel1: TPanel;
+    PnTop: TPanel;
     btnConnect: TButton;
     LbMessages: TListBox;
     edNickname: TEdit;
     Label1: TLabel;
+    BtnImage: TButton;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
     procedure EdMessageKeyDown(Sender: TObject; var Key: Word;
@@ -32,21 +33,24 @@ type
     procedure btnConnectClick(Sender: TObject);
     procedure edNicknameKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    procedure BtnImageClick(Sender: TObject);
   private
     { Private declarations }
-    FConected: Boolean;
+    FConnected: Boolean;
     FNickName: string;
     FContext: TZeroMQ;
     FSender: IZMQPair;
     ReceiverInfo: TThreadInfo;
     procedure CreateSockets;
     procedure UpdateStatusBar;
-    procedure SendMessage;
     procedure CreateReceiverThread;
     procedure Connect;
     procedure EnableMessagePanel;
     procedure EnableConnectButton;
+    procedure EnableTopPanel;
     procedure ValidateNickname;
+    procedure SendStringMessage(const aMessage: string; aMessageType: TMessageType = mtString);
+    procedure SendJoinMessage;
   public
     { Public declarations }
 
@@ -107,14 +111,30 @@ begin
   Connect;
 end;
 
+procedure TFChat.BtnImageClick(Sender: TObject);
+//var
+//  Writer: TWriterManager;
+begin
+//  Writer := TWriterManager.Create;
+//  try
+//    Writer.Writer.Write(1);
+//    Writer.Writer.Write(Nickname);
+//    Writer.Writer.Write(EdMessage.Text);
+//    FSender.SendStream(Writer.Stream);
+//  finally
+//    FreeAndNil(Writer);
+//  end;
+end;
+
 procedure TFChat.Connect;
 begin
   ValidateNickname;
   CreateSockets;
   CreateReceiverThread;
-  FConected := True;
+  FConnected := True;
   EnableMessagePanel;
   EnableConnectButton;
+  EnableTopPanel;
   UpdateStatusBar;
 end;
 
@@ -124,13 +144,11 @@ begin
 end;
 
 procedure TFChat.CreateSockets;
-const
-  CENTER = '%s acaba de entrar.';
 begin
   FContext := TZeroMQ.Create;
   FSender := FContext.Start(ZMQSocket.Push);
   FSender.Connect('tcp://localhost:5001');
-  FSender.SendString(Format(CENTER, [Nickname]));
+  SendJoinMessage;
 end;
 
 procedure TFChat.EdMessageKeyDown(Sender: TObject; var Key: Word;
@@ -138,7 +156,8 @@ procedure TFChat.EdMessageKeyDown(Sender: TObject; var Key: Word;
 begin
   if (Chr(Key) = #13) and (Length(Trim(EdMessage.Text)) > 0) then
   begin
-    SendMessage;
+    SendStringMessage(Trim(EdMessage.Text));
+    EdMessage.Text := '';
   end;
 end;
 
@@ -153,12 +172,17 @@ end;
 
 procedure TFChat.EnableConnectButton;
 begin
-  btnConnect.Enabled := not FConected;
+  btnConnect.Enabled := not FConnected;
 end;
 
 procedure TFChat.EnableMessagePanel;
 begin
-  PnMessages.Enabled := FConected;
+  PnMessages.Enabled := FConnected;
+end;
+
+procedure TFChat.EnableTopPanel;
+begin
+  PnTop.Enabled := not FConnected;
 end;
 
 procedure TFChat.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -178,12 +202,44 @@ begin
   UpdateStatusBar;
 end;
 
-procedure TFChat.SendMessage;
+procedure TFChat.SendJoinMessage;
 const
-  CSEND = '%s: %s';
+  CENTER = '%s acaba de entrar.';
 begin
-  FSender.SendString(Format(CSEND, [Nickname, EdMessage.Text]));
-  EdMessage.Text := '';
+  SendStringMessage(Format(CENTER, [Nickname]), mtJoin);
+end;
+
+//procedure TFChat.SendStringMessage(const aMessage: string; aMessageType: TMessageType);
+//var
+//  Writer: TWriterManager;
+//  MTByte: Byte;
+//begin
+//  Writer := TWriterManager.Create;
+//  try
+//    MTByte := Byte(aMessageType);
+//    Writer.Writer.Write(MTByte);
+//    Writer.Writer.Write(Nickname);
+//    Writer.Writer.Write(aMessage);
+//    Writer.Writer.Close;
+//    FSender.SendStream(Writer.Stream);
+//  finally
+//    FreeAndNil(Writer);
+//  end;
+//end;
+
+procedure TFChat.SendStringMessage(const aMessage: string; aMessageType: TMessageType);
+var
+  Writer: TWriter;
+begin
+  Writer := TWriter.Create;
+  try
+    Writer.WriteByte(Byte(aMessageType));
+    Writer.WriteString(Nickname);
+    Writer.WriteString(aMessage);
+    FSender.SendStream(Writer.Stream);
+  finally
+    FreeAndNil(Writer);
+  end;
 end;
 
 procedure TFChat.UpdateStatusBar;
@@ -191,7 +247,7 @@ const
   CONAS = 'Conectado como: %s';
   UNCON = 'Desconectado';
 begin
-  if FConected then
+  if FConnected then
     StatusB.Panels[0].Text := Format(CONAS, [Nickname])
   else
     StatusB.Panels[0].Text := UNCON;

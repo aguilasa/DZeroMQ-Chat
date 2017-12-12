@@ -17,8 +17,8 @@ type
     FProgress: integer;
     procedure SetPaused(doPause: boolean);
     function GetPaused: boolean;
-    procedure Execute; override;
   public
+    procedure Execute; override;
     Constructor Create(WindowHandle: HWND; callbackMsg: integer; myWorkFunc: TWorkFunction);
     Destructor Destroy; override;
     function StartNewWork(newWorkFunc: TWorkFunction): boolean;
